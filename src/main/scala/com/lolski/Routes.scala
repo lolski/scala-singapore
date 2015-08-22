@@ -2,8 +2,9 @@ package com.lolski
 
 import java.io.{OutputStream, BufferedOutputStream}
 import java.nio.file.{Path, Files, Paths}
+import java.util.UUID
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{ActorRef, Props, Actor, ActorLogging}
 import spray.can.Http
 import spray.can.Http.RegisterChunkHandler
 import spray.http._
@@ -16,8 +17,7 @@ import spray.http.HttpMethods.POST
 class Routes extends Actor with ActorLogging {
   implicit def actorRefFactory = context
 
-  var tmp: Option[Path] = None
-  var writer: Option[OutputStream] = None
+  val chunkedActor = context.actorOf(Props(classOf[ChunkedUploadManager]), "chunkedUpload")
 
   def receive = {
     case _: Http.Connected    => sender ! Http.Register(self)
@@ -38,18 +38,13 @@ class Routes extends Actor with ActorLogging {
 
     // chunked messages
     case msg @ ChunkedRequestStart(HttpRequest(POST, uri @ Uri.Path("/upload"), _, _, _)) =>
-      sender ! RegisterChunkHandler(self)
-      tmp = Some(Paths.get("/tmp/upload.mkv"))
-      writer = Some(new BufferedOutputStream(Files.newOutputStream(tmp.get)))
       log.info("starting chunked msg requests")
+      val procId = UUID.randomUUID().toString
+      chunkedActor ! ChunkedUploadManager.NewProcess(procId, sender)
 
-    case chunk: MessageChunk =>
-      writer.get.write(chunk.data.toByteArray)
-
-    case msg @ ChunkedMessageEnd =>
-      log.info("chunked msg requests finished!")
-      sender ! HttpResponse(StatusCodes.OK, "data received (by chunking)")
-      writer.get.close()
+    case ChunkedUploadManager.UploadFinished(id, path, sprayActor) =>
+      log.info("data received by chunking: " + path)
+      sprayActor ! HttpResponse(StatusCodes.OK, "data received by chunking: " + path)
 
     case x =>
       log.warning("unknown message: " + x)
