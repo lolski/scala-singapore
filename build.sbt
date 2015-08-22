@@ -17,3 +17,7 @@ libraryDependencies ++= {
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test"
   )
 }
+
+fork in run := true
+
+javaOptions in run += "-Xmx8G"

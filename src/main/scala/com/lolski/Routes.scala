@@ -23,12 +23,13 @@ class Routes extends Actor with ActorLogging {
       entity.toOption map { nonempty =>
         val data = nonempty.data.toByteArray
         log.info("request body length: " + data.length)
+        sender ! HttpResponse(StatusCodes.OK, "request body length: " + data.length)
       } getOrElse {
         log.info("request body must not be empty")
-        sender ! HttpResponse(StatusCodes.BadRequest)
+        sender ! HttpResponse(StatusCodes.BadRequest, "request body must not be empty")
       }
 
-    case _ =>
-      log.warning("unknown routes")
+    case x =>
+      log.warning("unknown message: " + x)
   }
 }

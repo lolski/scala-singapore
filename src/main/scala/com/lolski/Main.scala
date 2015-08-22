@@ -9,13 +9,15 @@ import akka.io.IO
 import akka.pattern.ask
 import spray.can.Http
 
-class Main {
-  implicit val as = ActorSystem()
-  import as.dispatcher
-  import Settings.defaultTimeout
+object Main {
+  def main(args: Array[String]) = {
+    implicit val as = ActorSystem()
+    import as.dispatcher
+    import Settings.defaultTimeout
 
-  val routeActor: ActorRef = as.actorOf(Props(classOf[Routes]), "routes")
-  val attemptStart = IO(Http) ? Http.Bind(routeActor, interface = Settings.host, port = Settings.port)
+    val routeActor: ActorRef = as.actorOf(Props(classOf[Routes]), "routes")
+    val attemptStart = IO(Http) ? Http.Bind(routeActor, interface = Settings.host, port = Settings.port)
 
-  attemptStart onComplete { _ => println("started") }
+    attemptStart onComplete { _ => println("started") }
+  }
 }
