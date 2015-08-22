@@ -20,4 +20,4 @@ libraryDependencies ++= {
 
 fork in run := true
 
-javaOptions in run += "-Xmx8G"
+javaOptions in run += "-Xmx256M"
