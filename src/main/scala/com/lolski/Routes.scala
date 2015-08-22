@@ -42,6 +42,8 @@ class Routes extends Actor with ActorLogging {
       upload map { path =>
         log.info("data received by chunking: " + path)
         HttpResponse(StatusCodes.OK, "data received by chunking: " + path)
+      } recover { case t: Throwable =>
+        HttpResponse(StatusCodes.InternalServerError, "error occured")
       } pipeTo sender
 
     case x =>

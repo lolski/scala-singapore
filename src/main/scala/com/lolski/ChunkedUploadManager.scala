@@ -32,6 +32,7 @@ class ChunkedUploadManager extends Actor with ActorLogging {
       sender ! p.future
 
     case ChunkedUpload.UploadFinished(id, file, sprayActor) =>
+      log.info("finishing upload")
       terminateActor(id)
       terminatePromise(id, file)
   }
@@ -54,6 +55,7 @@ class ChunkedUploadManager extends Actor with ActorLogging {
   }
 
   private def terminatePromise(id: String, file: Try[Path]): Unit = {
+    log.info("terminating promise")
     promises(id).complete(file)
   }
 }
