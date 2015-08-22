@@ -6,6 +6,7 @@ package com.lolski
 
 import akka.actor.{ActorLogging, Actor, ActorRef, Props}
 import java.nio.file.{Files, Path, Paths}
+import scala.concurrent.{Promise, Future}
 import scala.util.Try
 
 /**
@@ -19,27 +20,40 @@ object ChunkedUploadManager {
 
 class ChunkedUploadManager extends Actor with ActorLogging {
   var processes = Map[String, ActorRef]()
+  var promises = Map[String, Promise[Path]]()
 
   val tmp = Paths.get("/tmp/chunked_uploads")
   Files.createDirectories(tmp)
 
   def receive = {
     case ChunkedUploadManager.NewProcess(id, sprayActor) =>
-      spawn(id, sprayActor)
-      
+      spawnActor(id, sprayActor)
+      val p = spawnPromise(id)
+      sender ! p.future
+
     case ChunkedUpload.UploadFinished(id, file, sprayActor) =>
-      terminate(id)
-      context.parent ! ChunkedUploadManager.UploadFinished(id, file, sprayActor)
+      terminateActor(id)
+      terminatePromise(id, file)
   }
 
-  private def spawn(id: String, sprayActor: ActorRef) = {
+  private def spawnActor(id: String, sprayActor: ActorRef): Unit = {
     val props = Props(classOf[ChunkedUpload], id, tmp, sprayActor, self)
     val ref = context.actorOf(props, id)
     processes += (id -> ref)
   }
 
-  private def terminate(id: String) = {
+  private def terminateActor(id: String): Unit = {
     context.stop(processes(id))
     processes -= id
+  }
+
+  private def spawnPromise(id: String): Promise[Path] = {
+    val p = Promise[Path]()
+    promises += (id -> p)
+    p
+  }
+
+  private def terminatePromise(id: String, file: Try[Path]): Unit = {
+    promises(id).complete(file)
   }
 }
