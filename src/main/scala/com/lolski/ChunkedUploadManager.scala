@@ -14,7 +14,7 @@ import scala.util.Try
 
 object ChunkedUploadManager {
   case class NewProcess(id: String, sprayActor: ActorRef)
-  case class UploadFinished(id: String, file: Try[Path], requester: ActorRef)
+  case class UploadFinished(id: String, file: Try[Path], sprayActor: ActorRef)
 }
 
 class ChunkedUploadManager extends Actor with ActorLogging {
@@ -25,12 +25,21 @@ class ChunkedUploadManager extends Actor with ActorLogging {
 
   def receive = {
     case ChunkedUploadManager.NewProcess(id, sprayActor) =>
-      val props = Props(classOf[ChunkedUpload], id, tmp, sprayActor, self)
-      val ref = context.actorOf(props, id)
-      processes += (id -> ref)
+      spawn(id, sprayActor)
       
     case ChunkedUpload.UploadFinished(id, file, sprayActor) =>
-      processes -= id
+      terminate(id)
       context.parent ! ChunkedUploadManager.UploadFinished(id, file, sprayActor)
+  }
+
+  private def spawn(id: String, sprayActor: ActorRef) = {
+    val props = Props(classOf[ChunkedUpload], id, tmp, sprayActor, self)
+    val ref = context.actorOf(props, id)
+    processes += (id -> ref)
+  }
+
+  private def terminate(id: String) = {
+    context.stop(processes(id))
+    processes -= id
   }
 }
