@@ -22,8 +22,8 @@ class Routes extends Actor with ActorLogging {
     case msg @ HttpRequest(POST, uri @ Uri.Path("/upload"), _, entity: HttpEntity, _) =>
       entity.toOption map { nonempty =>
         val data = nonempty.data.toByteArray
-        log.info("request body length: " + data.length)
-        sender ! HttpResponse(StatusCodes.OK, "request body length: " + data.length)
+        log.info("data received")
+        sender ! HttpResponse(StatusCodes.OK, "data received")
       } getOrElse {
         log.info("request body must not be empty")
         sender ! HttpResponse(StatusCodes.BadRequest, "request body must not be empty")
