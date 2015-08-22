@@ -5,7 +5,7 @@ package com.lolski
  */
 import akka.actor._
 import java.io._
-import java.nio.file.{Files, Path}
+import java.nio.file.{Paths, Files, Path}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import spray.can.Http
@@ -18,7 +18,7 @@ object ChunkedUpload {
 }
 
 class ChunkedUpload(id: String, dir: Path, sprayActor: ActorRef, manager: ActorRef) extends Actor with ActorLogging {
-  val tmp = Files.createTempFile(dir, "raw", ".tmp")
+  val tmp = Paths.get(s"${dir.toAbsolutePath.toString}/$id.tmp")
   val writer = new BufferedOutputStream(new FileOutputStream(tmp.toFile))
 
   sprayActor ! RegisterChunkHandler(self)
@@ -30,6 +30,7 @@ class ChunkedUpload(id: String, dir: Path, sprayActor: ActorRef, manager: ActorR
     case e: ChunkedMessageEnd =>
       context.setReceiveTimeout(Duration.Undefined) // turn off actor timeout
       manager ! ChunkedUpload.UploadFinished(id, Success(tmp), sprayActor)
+      writer.close()
 
 //    case e: Http.ConnectionClosed =>
 //      log.info("chunked metadata upload: connection closed prematurely")
@@ -48,5 +49,5 @@ class ChunkedUpload(id: String, dir: Path, sprayActor: ActorRef, manager: ActorR
 //      context.stop(self)
   }
 
-  override def postStop(): Unit = log.info("finished.")
+//  override def postStop(): Unit = log.info("finished.")
 }

@@ -17,7 +17,7 @@ import spray.http.HttpMethods.POST
 class Routes extends Actor with ActorLogging {
   implicit def actorRefFactory = context
 
-  val chunkedActor = context.actorOf(Props(classOf[ChunkedUploadManager]), "chunkedUpload")
+  val chunkedActor = context.actorOf(Props(classOf[ChunkedUploadManager]), "chunkedUploadManager")
 
   def receive = {
     case _: Http.Connected    => sender ! Http.Register(self)
