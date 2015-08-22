@@ -10,7 +10,10 @@ import akka.pattern.ask
 import spray.can.Http
 
 class Main {
-  val as = ActorSystem()
+  implicit val as = ActorSystem()
+  import as.dispatcher
+  import Settings.defaultTimeout
+
   val routeActor: ActorRef = as.actorOf(Props(classOf[Routes]), "routes")
   val attemptStart = IO(Http) ? Http.Bind(routeActor, interface = Settings.host, port = Settings.port)
 
