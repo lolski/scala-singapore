@@ -18,12 +18,12 @@ object ChunkedUploadManager {
   case class UploadFinished(id: String, file: Try[Path], sprayActor: ActorRef)
 }
 
-class ChunkedUploadManager extends Actor with ActorLogging {
+class ChunkedUploadManager(tmp: String) extends Actor with ActorLogging {
   var processes = Map[String, ActorRef]()
   var promises = Map[String, Promise[Path]]()
 
-  val tmp = Paths.get("/tmp/chunked_uploads")
-  Files.createDirectories(tmp)
+  val tmpPath = Paths.get(tmp)
+  Files.createDirectories(tmpPath)
 
   def receive = {
     case ChunkedUploadManager.NewProcess(id, sprayActor) =>
@@ -38,7 +38,7 @@ class ChunkedUploadManager extends Actor with ActorLogging {
   }
 
   private def spawnActor(id: String, sprayActor: ActorRef): Unit = {
-    val props = Props(classOf[ChunkedUpload], id, tmp, sprayActor, self)
+    val props = Props(classOf[ChunkedUpload], id, tmpPath, sprayActor, self)
     val ref = context.actorOf(props, id)
     processes += (id -> ref)
   }

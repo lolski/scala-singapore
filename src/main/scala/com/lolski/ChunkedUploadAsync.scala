@@ -12,10 +12,9 @@ import java.nio.file.Path
  */
 
 
-class ChunkedUploadAsync(implicit val context: ActorContext) {
-  import context.dispatcher
-  val chunkedActor = context.actorOf(Props(classOf[ChunkedUploadManager]), "chunkedUploadManager")
-  implicit val timeout = Timeout(10.seconds)
+class ChunkedUploadAsync(name: String, val tmp: String)(implicit val to: Timeout = Timeout(10.seconds), implicit val ctx: ActorContext) {
+  import ctx.dispatcher
+  val chunkedActor = ctx.actorOf(Props(classOf[ChunkedUploadManager], tmp), name)
 
   def upload(id: String, sprayActor: ActorRef): Future[Path] = {
     val async = (chunkedActor ? ChunkedUploadManager.NewProcess(id, sprayActor)).mapTo[Future[Path]]

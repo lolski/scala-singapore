@@ -14,7 +14,7 @@ import spray.http.HttpMethods.POST
 class Routes extends Actor with ActorLogging {
   import context.dispatcher
 
-  val asyncUpload = new ChunkedUploadAsync()
+  val asyncUpload = new ChunkedUploadAsync("chunkedUploadManager", "/tmp/chunked_uploads")
 
   def receive = {
     case _: Http.Connected    => sender ! Http.Register(self)
